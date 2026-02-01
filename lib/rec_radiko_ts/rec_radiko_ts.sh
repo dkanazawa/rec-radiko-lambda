@@ -416,19 +416,21 @@ radiko_auth() {
 #   1: Failed
 #######################################
 b64_enc() {
-  if which base64 > /dev/null 2>&1 ; then
+  # which の代わりに command -v を使用
+  if command -v base64 > /dev/null 2>&1 ; then
     base64
-  elif which basenc > /dev/null 2>&1 ; then
+  elif command -v basenc > /dev/null 2>&1 ; then
     basenc --base64 -
-  elif which openssl > /dev/null 2>&1 ; then
+  elif command -v openssl > /dev/null 2>&1 ; then
     openssl enc -base64
-  elif which uuencode > /dev/null 2>&1 ; then
-    uuencode -m - | sed -e '1d' -e '$d'
-  elif which b64encode > /dev/null 2>&1 ; then
-    b64encode - | sed -e '1d' -e '$d'
   else
-    echo 'base64, basenc, openssl, uuencode, b64encode commands not found.' >&2
-    return 1
+    # 全滅した場合の最終手段としてフルパスを試す
+    if [ -x /usr/bin/base64 ]; then
+      /usr/bin/base64
+    else
+      echo 'base64, basenc, openssl commands not found.' >&2
+      return 1
+    fi
   fi
   return 0
 }
@@ -747,9 +749,6 @@ if [ "${record_success}" = '1' ]; then
     record_success='0'
   fi
 fi
-
-# Cleanup temporary files
-find "${tmp_dir}" -type d ! -path "${tmp_dir}" -prune -o -type f -name "${tmp_filebase}_*" -exec rm -f {} \; || true
 
 if [ "${record_success}" != '1' ]; then
   echo 'Record failed' >&2
