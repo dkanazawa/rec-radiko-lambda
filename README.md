@@ -53,6 +53,19 @@ Git管理外のファイルを手動で配置してください。
 - **ランタイム**: Custom runtime on Amazon Linux 2 (or AL2023)
 - **ハンドラ**: (bootstrapを使用するため設定不要ですが、慣習的に `function.handler` など)
 
+### 4. 留意事項
+
+#### 依存ツールの追加 (Lambda Layer)
+この関数を正常に動作させるには、`ffmpeg` と `jq` コマンドが必要です。これらはLambda環境には標準で含まれていないため、**Lambda Layer** を使用して追加してください。
+
+- **ffmpeg**: M4AからMP3への変換に使用します。
+  - 参考: [serverlesspub/ffmpeg-aws-lambda-layer](https://github.com/serverlesspub/ffmpeg-aws-lambda-layer)
+- **jq**: JSONデータのパースに使用します。
+
+#### Google サービスアカウントについて
+本プログラムは、Google Driveへのアップロードにサービスアカウント自身のストレージ容量 (My Drive) を使用することを想定しています。
+**2025年4月15日以降に新規作成されたサービスアカウント**については、Googleの仕様変更により自身のストレージを持たない（または制限される）可能性があるため、使用する際はご注意ください。必要に応じて共有ドライブの使用などを検討してください。
+
 ## 開発について
 
 - ソースコードは `src/` ディレクトリ内のファイルを編集してください。
