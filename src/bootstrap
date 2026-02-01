@@ -1,0 +1,47 @@
+#!/bin/bash
+# Lambda Custom Runtime Bootstrap Script
+# Lambda Runtime API とやり取りして、イベントを処理
+
+set -euo pipefail
+
+# Lambda Runtime API エンドポイント
+LAMBDA_RUNTIME_API="${AWS_LAMBDA_RUNTIME_API:-127.0.0.1:9001}"
+HANDLER="${1:-lambda_handler.handler}"
+
+# Lambda ハンドラースクリプトを実行する関数
+invoke_handler() {
+    local event_data="$1"
+    local request_id="$2"
+    
+    # 環境変数としてイベントデータを渡してハンドラーを実行
+    bash /var/task/lambda_handler.sh "$event_data" "$request_id"
+    
+    local exit_code=$?
+    
+    if [ $exit_code -eq 0 ]; then
+        # 成功時は結果を返す
+        local response='{"statusCode": 200, "body": "Success"}'
+        curl -s -X POST "http://${LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/${request_id}/response" \
+             -d "$response"
+    else
+        # エラー時は error endpoint へ
+        local error_msg="Handler script failed with exit code ${exit_code}"
+        curl -s -X POST "http://${LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/${request_id}/error" \
+             -H "Lambda-Runtime-Function-Error-Type: Unhandled" \
+             -d "$error_msg"
+    fi
+}
+
+# メインループ：Lambda Runtime API からイベントを受け取る
+while true; do
+    # 次のイベントを待機
+    # local next_event_response
+    next_event_response=$(curl -s -X GET "http://${LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/next")
+    
+    # local request_id
+    request_id=$(curl -s -I -X GET "http://${LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/next" | \
+                grep -i "Lambda-Runtime-Aws-Request-Id" | awk '{print $2}' | tr -d '\r')
+    
+    # イベントを処理
+    invoke_handler "$next_event_response" "$request_id"
+done

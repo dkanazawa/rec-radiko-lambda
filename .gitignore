@@ -1,0 +1,11 @@
+# Binaries
+# bin/rclone (Included in repo)
+config/rclone.conf
+config/credentials.json
+
+# Build artifacts
+dist/
+deployment_package.zip
+
+# System
+.DS_Store

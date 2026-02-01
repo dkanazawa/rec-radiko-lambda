@@ -1,0 +1,5 @@
+[MyGoogleDrive]
+type = drive
+scope = drive
+service_account_file = /var/task/config/credentials.json
+root_folder_id = [YOUR_ROOT_FOLDER_ID]
